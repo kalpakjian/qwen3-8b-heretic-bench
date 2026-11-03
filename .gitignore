@@ -14,6 +14,7 @@ out.txt
 # results/report.md is generated *from* results_*.json, and a reader should be
 # able to audit every number without re-running a 90-minute benchmark.
 !results/report.md
+!results/report_EN.md
 !results/results_*.json
 results/_cache/
 

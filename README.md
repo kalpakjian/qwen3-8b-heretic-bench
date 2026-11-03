@@ -159,6 +159,29 @@ The commit hash in `_META.json` is what makes the run checkable.
 > benchmark. Different artifacts, different policy — stated so it is not a
 > surprise.
 
+### Verified on hardware (2026-11-04, RTX 4090)
+
+The ARC path was exercised end-to-end (`.venv` + lm-eval 0.4.13 + transformers 5.22.1,
+`--limit 20 --no-thinking`), which surfaced six defects that blocked the documented
+workflow. All are fixed:
+
+| # | Symptom | Cause | Fix |
+|---|---|---|---|
+| 1 | would load the wrong directory | `resolve_model_id()` returned the snapshot **root** while only `model_files/*` was fetched → no `config.json` | return `root/subfolder` |
+| 2 | `pip install -r requirements.txt` fails | file began with an RST title (`requirements.txt` + `=====`), not a comment | title lines commented out |
+| 3 | every run dies at model init | `gen_kwargs=…` was tucked inside `--model_args`, which lm-eval splits on **every comma** with no quote handling → `unexpected keyword argument 'gen_kwargs'` | moved to its own `--gen_kwargs` (space-separated) |
+| 4 | run scores fine, then exits 1 having written nothing | lm-eval ≥ 0.4.13 **appends its own timestamp** to `--output_path`, so the expected file never exists → `_META.json`/`_TABLE.md`/`_RERUN.txt` were silently skipped | glob the newest `<stem>*.json` |
+| 5 | `_RERUN.txt` had `--output_path` twice | a second flag was appended to a command that already had one | replace the existing value |
+| 6 | `huggingface_hub` missing silently dropped `--subfolder` | `except ImportError: return model` | raise with an actionable message instead |
+
+Smoke result (20 of 1,172 ARC-Challenge questions, so the **score is meaningless** —
+it proves the plumbing): `acc 0.5000 / acc_norm 0.5500`, 47.5 s including model load.
+
+One environment note: this box has Python **3.14** as `/usr/bin/python3`, which has no
+torch wheels; the run used 3.12. If `./scripts/setup-cuda-arch.sh` reports `python-pip`
+missing it will try `sudo pacman`, so have your password ready (or install deps into a
+3.12 venv yourself).
+
 ---
 
 ## Dual-boot pre-flight (Windows side)

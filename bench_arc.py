@@ -148,9 +148,13 @@ def resolve_model_id(model: str, subfolder: str, dry_run: bool = False) -> str:
     try:
         from huggingface_hub import snapshot_download  # noqa: PLC0415
     except ImportError:
-        print("!! huggingface_hub missing; assuming weights at repo root.",
-              file=sys.stderr)
-        return model
+        # Falling back to the bare repo id here silently drops --subfolder, so
+        # lm-eval ends up pointed at a directory with no config.json and fails
+        # much later with a confusing message. Refuse immediately instead.
+        raise SystemExit(
+            f"!! huggingface_hub is required to resolve --subfolder '{subfolder}'.\n"
+            f"   Install the requirements first: pip install -r requirements.txt"
+        )
 
     print(f"-> Resolving {model}/{subfolder} ...", flush=True)
     root = snapshot_download(repo_id=model, allow_patterns=[f"{subfolder}/*"])
@@ -194,12 +198,20 @@ def build_cmd(args: argparse.Namespace, model_path: str, out_path: Path) -> list
     extras: list[str] = []
     if args.apply_chat_template:
         extras += ["apply_chat_template=true", "fewshot_as_multiturn=true"]
+    if extras:
+        cmd[cmd.index("--model_args") + 1] += "," + ",".join(extras)
     if args.no_thinking:
         # Deterministic, short, stop at end-of-turn: right for a direct-answer
         # task. Keeps runs reproducible and inside the context window.
-        extras.append("gen_kwargs=do_sample=false,max_gen_toks=16,until=<|im_end|>")
-    if extras:
-        cmd[cmd.index("--model_args") + 1] += "," + ",".join(extras)
+        #
+        # NOTE: this must be its own --gen_kwargs flag, NOT an entry inside
+        # --model_args. lm-eval splits --model_args on every comma with no
+        # quote handling (lm_eval/utils.py: simple_parse_args_string), so
+        # "gen_kwargs=do_sample=false,max_gen_toks=16,until=<|im_end|>"
+        # shatters into three separate model kwargs and the model constructor
+        # dies with "unexpected keyword argument 'gen_kwargs'".
+        # --gen_kwargs takes space-separated pairs (nargs="+"), so it is safe.
+        cmd += ["--gen_kwargs", "do_sample=false", "max_gen_toks=16", "until=<|im_end|>"]
     return cmd
 
 
@@ -307,6 +319,18 @@ def main() -> int:
     if rc != 0:
         print(f"\n!! lm-eval exited {rc}", file=sys.stderr)
         return rc
+    # lm-eval >= 0.4.13 appends its own timestamp to --output_path
+    # (e.g. <stem>.json -> <stem>_2026-11-04T01-18-00.727652.json), so the exact
+    # path we asked for usually does not exist. Pick the newest file matching the
+    # stem instead of failing after a successful run -- otherwise the score is
+    # printed but _META.json / _TABLE.md / _RERUN.txt are never written.
+    if not out_path.exists():
+        candidates = sorted(
+            args.outdir.glob(f"{out_path.stem}*.json"), key=lambda p: p.stat().st_mtime
+        )
+        if candidates:
+            print(f"  (lm-eval wrote {candidates[-1].name}; using that)")
+            out_path = candidates[-1]
     if not out_path.exists():
         print(f"\n!! expected results at {out_path} but file missing", file=sys.stderr)
         return 1
@@ -338,9 +362,16 @@ def main() -> int:
     )
 
     # One-line command anyone can re-execute to verify the run.
+    # Replace the existing --output_path instead of appending a second one: cmd
+    # already ends with it, and a duplicated flag makes the "re-executable"
+    # artifact ambiguous (argparse silently keeps the last value).
+    rerun_cmd = list(cmd)
+    if "--output_path" in rerun_cmd:
+        rerun_cmd[rerun_cmd.index("--output_path") + 1] = f"{stem}_rerun.json"
+    else:
+        rerun_cmd += ["--output_path", f"{stem}_rerun.json"]
     (args.outdir / f"{stem}_RERUN.txt").write_text(
-        " ".join(f'"{c}"' if " " in c else c for c in cmd)
-        + f" --output_path {stem}_rerun.json\n",
+        " ".join(f'"{c}"' if " " in c else c for c in rerun_cmd) + "\n",
         encoding="utf-8",
     )
 

@@ -62,12 +62,13 @@ python kl_eval.py --max-windows "$KL_WINDOWS"
 step "Phase 3 — 能力保留（MMLU / GSM8K / PPL）"
 python capability_eval.py --limit-mmlu "$MMLU_N" --limit-gsm8k "$GSM8K_N" --batch-size "$BATCH"
 
-step "Phase 4 — 彙整報告"
+step "Phase 4 — 彙整報告（中文 + 英文）"
 python make_report.py
+python make_report.py --lang en
 
 echo
 echo "[done] 產出："
-ls -la ../results/*.json ../results/report.md 2>/dev/null || true
+ls -la ../results/*.json ../results/report.md ../results/report_EN.md 2>/dev/null || true
 echo
 echo "注意：results/_cache/ 是 KL 階段暫存的 base log-prob（約 3 GB），可安全刪除。"
 

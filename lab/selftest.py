@@ -89,14 +89,27 @@ def test_mmlu_format() -> None:
 
 
 def test_report_helpers() -> None:
-    print("\n5) 報告數值格式")
+    print("\n5) 報告數值格式與雙語字串表")
     from make_report import delta_pt, pct
+    from report_i18n import STRINGS
 
     check(pct(0.0) == "0.0%", "pct(0.0)")
     check(pct(0.5833) == "58.3%", "pct(0.5833)")
     check(pct(None) == "n/a", "pct(None)")
     check(delta_pt(0.0, 0.5833) == "-58.3 pt", "delta_pt(0.0, 0.5833)")
     check(delta_pt(None, 0.5) == "—", "delta_pt(None, …)")
+
+    # 每一種語言的鍵必須完全一致，否則某個語言會缺一節（而且是靜默的）。
+    zh = set(STRINGS["zh"])
+    for lang, pack in STRINGS.items():
+        check(set(pack) == zh, f"{lang} 的鍵集合與 zh 相同（{len(pack)} 個）")
+    # 佔位符也要對得上，不然 .format() 會在執行時炸掉。
+    import re
+
+    ph = lambda s: set(re.findall(r"\{(\w+)", s))  # noqa: E731
+    mismatched = [k for k in zh if ph(STRINGS["zh"][k]) != ph(STRINGS["en"][k])]
+    check(not mismatched, f"中英佔位符一致（不一致: {mismatched[:3]}）")
+
 
 
 def main() -> int:

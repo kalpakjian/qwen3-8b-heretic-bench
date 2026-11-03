@@ -1,5 +1,11 @@
-requirements.txt
-===============
+# requirements.txt
+# ================
+#
+# The two lines above used to be an RST-style title, which made
+# `pip install -r requirements.txt` fail outright:
+#   ERROR: Invalid requirement: '==============='
+# Every requirement line must be a comment or a valid specifier.
+#
 # Verified against Python 3.12 on Arch/Omarchy and 3.15 on Windows.
 lm-eval>=0.4.9
 transformers>=4.51.0

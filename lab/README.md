@@ -55,6 +55,13 @@ SMOKE=1 bash run_all.sh
 | 3 | `capability_eval.py` | MMLU（16 科抽樣）、GSM8K、PPL | `--limit-mmlu 20`、`--limit-gsm8k 100` |
 | 4 | `make_report.py` | 彙整成 `../results/report.md` | 只讀 JSON、不重算 |
 
+報告有中英兩版（同一份 JSON、同一套結構，文字在 `report_i18n.py`）：
+
+```bash
+python make_report.py              # results/report.md      中文
+python make_report.py --lang en    # results/report_EN.md   英文
+```
+
 單獨重跑某個階段：
 
 ```bash
