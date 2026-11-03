@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.venv-linux/
+*.egg-info/
+
+# Benchmark output -- regenerable, never commit scores by hand
+results/
+out.txt
+
+# HF cache (if anyone points HF_HOME here)
+.cache/
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini

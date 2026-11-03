@@ -1,0 +1,17 @@
+requirements.txt
+===============
+# Verified against Python 3.12 on Arch/Omarchy and 3.15 on Windows.
+lm-eval>=0.4.9
+transformers>=4.51.0
+accelerate>=1.2.0
+datasets>=3.0.0
+huggingface_hub>=0.26.0
+
+# torch is installed separately with an explicit CUDA index:
+#   pip install --index-url https://download.pytorch.org/whl/cu128 torch
+# It is deliberately NOT pinned here so a CPU-only build can never sneak in
+# through a transitive dependency resolution.
+
+# optional, much faster on a real GPU:
+# vllm>=0.7.0
+
