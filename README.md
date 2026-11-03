@@ -12,7 +12,7 @@ Two suites, because an abliterated model raises two different questions:
 
 | Suite | Question it answers | Entry point | GPU time |
 |---|---|---|---|
-| **ARC** | Is it still as capable as published Qwen3-8B numbers? | [`bench_arc.py`](bench_arc.py) | ~20 min |
+| **ARC** | Is it still as capable as published Qwen3-8B numbers? | [`bench_arc.py`](bench_arc.py) | ~10 min/model |
 | **Refusal & damage** | Did the abliteration actually remove refusals — and what did that cost? | [`lab/`](lab/) | ~60–90 min |
 
 ---
@@ -33,6 +33,27 @@ Full tables: [`results/report.md`](results/report.md).
 | GSM8K exact match (100) | 88.0% | 89.0% | +1.0 pt |
 | wikitext-2 perplexity | 11.683 | 11.716 | +0.29% |
 | Weights actually changed | — | 24 / 399 tensors (6.0%) | — |
+
+**ARC-Challenge** (full test set, 1,172 questions, 25-shot, thinking off) — the
+capability question asked with a benchmark other people can compare against:
+
+| ARC-Challenge | base | heretic |
+|---|---|---|
+| acc | 64.85% | 65.02% |
+| acc_norm | **67.41%** | 67.06% |
+| stderr | ±1.40 | ±1.39 |
+
+The arms differ by **+0.17 pt** on `acc` and **−0.35 pt** on `acc_norm` — opposite
+directions, both far inside the ±1.4 pt standard error. **No detectable capability
+difference**, consistent with MMLU and GSM8K above. Wall clock was 9.2 / 9.3 min.
+
+Per this repo's policy the ARC run artifacts are not committed (regenerate rather
+than trust a checked-in score). Reproduce with:
+
+```bash
+python bench_arc.py --no-thinking --tag heretic
+python bench_arc.py --no-thinking --tag base --model Qwen/Qwen3-8B --root-weights
+```
 
 **The headline: on this Chinese prompt suite the abliteration changed *how* the
 model refuses, not *whether* it refuses.**
@@ -176,6 +197,8 @@ workflow. All are fixed:
 
 Smoke result (20 of 1,172 ARC-Challenge questions, so the **score is meaningless** —
 it proves the plumbing): `acc 0.5000 / acc_norm 0.5500`, 47.5 s including model load.
+A subsequent full run (all 1,172 questions, both models) completed cleanly at ~9 min
+per model; see the ARC table near the top of this file.
 
 One environment note: this box has Python **3.14** as `/usr/bin/python3`, which has no
 torch wheels; the run used 3.12. If `./scripts/setup-cuda-arch.sh` reports `python-pip`
