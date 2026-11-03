@@ -5,12 +5,21 @@ __pycache__/
 .venv-linux/
 *.egg-info/
 
-# Benchmark output -- regenerable, never commit scores by hand
-results/
+# --- ARC suite (bench_arc.py) output --------------------------------
+# Regenerable run artifacts: never hand-edit, never commit scores.
+results/*
 out.txt
 
-# HF cache (if anyone points HF_HOME here)
+# ...EXCEPT the refusal / KL / capability artifacts. Those ARE tracked:
+# results/report.md is generated *from* results_*.json, and a reader should be
+# able to audit every number without re-running a 90-minute benchmark.
+!results/report.md
+!results/results_*.json
+results/_cache/
+
+# HF cache (whichever HF_HOME you point at this repo)
 .cache/
+hf-cache/
 
 # OS noise
 .DS_Store
