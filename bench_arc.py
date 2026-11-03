@@ -153,7 +153,12 @@ def resolve_model_id(model: str, subfolder: str, dry_run: bool = False) -> str:
         return model
 
     print(f"-> Resolving {model}/{subfolder} ...", flush=True)
-    return snapshot_download(repo_id=model, allow_patterns=[f"{subfolder}/*"])
+    root = snapshot_download(repo_id=model, allow_patterns=[f"{subfolder}/*"])
+    # snapshot_download() returns the snapshot ROOT (…/snapshots/<rev>), which only
+    # contains the files matched by allow_patterns. For this repo that means
+    # config.json lives at <root>/model_files/config.json, NOT at <root> — handing
+    # the root to lm-eval/vLLM fails to load the model. Point at the subfolder.
+    return str(Path(root) / subfolder)
 
 
 def build_cmd(args: argparse.Namespace, model_path: str, out_path: Path) -> list[str]:
