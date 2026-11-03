@@ -1,0 +1,20 @@
+# KL 階段的 base log-prob 暫存（約 3 GB，可重算）
+results/_cache/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 模型快取 / 環境（在本 repo 之外，但保險起見）
+hf-cache/
+.cache/
+
+# 編輯器 / 系統
+.vscode/
+.idea/
+.DS_Store
+
+# 注意：results/*.json 與 results/report.md「刻意進版控」——
+# 它們是本 repo 的產出物，clone 下來就能直接看數字，不必重跑。
